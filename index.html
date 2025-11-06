@@ -1,0 +1,339 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Polyhedral Dice Roller</title>
+    
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Use Inter font for a professional look -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Define the clean, dark color palette and layout */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1c1c2c; /* Deep Indigo Base Background */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            overflow: hidden; 
+
+            /* Animated Lighting Background Styles (Two shifting radial gradients) */
+            background: radial-gradient(circle at top left, #301934 0%, transparent 50%),
+                        radial-gradient(circle at bottom right, #2c2140 0%, transparent 50%),
+                        #1c1c2c; 
+            background-size: 200% 200%; 
+            animation: background-pulse 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes background-pulse {
+            /* Gently shift the background gradients to create a pulsating light effect */
+            0% {
+                background-position: 0% 0%, 100% 100%, 0% 0%;
+            }
+            100% {
+                background-position: 100% 100%, 0% 0%, 0% 0%;
+            }
+        }
+
+        /* --- DICE SHAPE STYLES --- */
+        .dice-container {
+            /* Base dimensions and centering */
+            width: 150px;
+            height: 150px;
+            margin-bottom: 40px;
+            transition: all 0.2s ease-in-out;
+            cursor: default;
+
+            /* Base style for all dice visuals */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: 700;
+            line-height: 1;
+            text-align: center;
+            color: #333333; /* Dice number color */
+
+            /* Shared appearance (white, slightly embossed) */
+            background-color: #f0f0f5; 
+            border: 1px solid #c0c0c0;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Dice specific styles and clip-paths for polyhedral shapes */
+        .dice-container.d4-shape { /* Triangle */
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            border-radius: 0;
+            padding-top: 20px; 
+        }
+        .dice-container.d6-shape { /* Rounded Square */
+             border-radius: 18px; 
+             clip-path: none;
+        }
+        .dice-container.d8-shape { /* Octagon */
+            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
+            border-radius: 0;
+        }
+        .dice-container.d10-shape { /* Hexagon approximation */
+            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+            border-radius: 0;
+        }
+        .dice-container.d12-shape { /* Pentagon */
+            clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 20% 100%, 0% 35%);
+            border-radius: 0;
+        }
+        .dice-container.d20-shape { /* Circle for distinction */
+            border-radius: 50%;
+            clip-path: none;
+        }
+
+        /* --- UI STYLES --- */
+        .roll-button {
+            padding: 12px 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            border-radius: 8px;
+            cursor: pointer;
+            border: none;
+            background-color: #8b5cf6; /* Violet */
+            box-shadow: 0 4px #6d28d9; 
+            transition: all 0.15s ease-in-out;
+            letter-spacing: 0.05em;
+            width: 100%; 
+        }
+
+        .roll-button:hover { background-color: #7c3aed; }
+        .roll-button:active { box-shadow: 0 2px #6d28d9; transform: translateY(2px); }
+        .roll-button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: translateY(0); }
+
+        /* Final Result Display (Small readout below button) */
+        .result-display {
+            width: 150px;
+            height: 80px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-top: 40px;
+            color: #8b5cf6; 
+            background-color: #2a2a3e; 
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* CSS Animation for a realistic roll effect (applied to the dice container) */
+        @keyframes roll-shake {
+            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            25% { transform: translate(2px, -2px) rotate(15deg) scale(0.98); }
+            50% { transform: translate(-2px, 2px) rotate(-10deg) scale(1.02); }
+            75% { transform: translate(3px, 1px) rotate(5deg) scale(0.99); }
+            100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        }
+
+        .rolling {
+            animation: roll-shake 0.1s infinite alternate; 
+        }
+
+        /* Dice Selector Buttons */
+        .dice-selector-button {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #3b3b55; 
+            color: #b0b0cc;
+            border: 1px solid #4a4a6e;
+            transition: all 0.2s;
+        }
+
+        .dice-selector-button:hover {
+            background-color: #4a4a6e;
+            color: white;
+        }
+
+        .dice-selector-button.active {
+            background-color: #8b5cf6; 
+            color: white;
+            border-color: #8b5cf6;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Main Card Container -->
+    <div class="flex flex-col items-center p-10 bg-[#2a2a3e] shadow-2xl rounded-xl max-w-sm w-full border border-gray-700 z-10 relative">
+
+        <!-- Title: POLYHEDRAL ROLLER -->
+        <h1 class="text-3xl font-light tracking-widest mb-6 text-gray-200">
+            POLYHEDRAL ROLLER
+        </h1>
+
+        <!-- Dice Selector Buttons -->
+        <div id="diceSelector" class="flex flex-wrap justify-center gap-2 mb-8 max-w-full z-20">
+            <!-- Buttons dynamically added here by JavaScript -->
+        </div>
+
+        <!-- Dice Container (Changes shape based on selection) -->
+        <div id="dice" class="dice-container z-20">
+            <!-- Rolled number displays here -->
+        </div>
+
+        <!-- Roll Button -->
+        <button id="rollButton" class="roll-button z-20">
+            ROLL THE DICE
+        </button>
+
+        <!-- Final Result Display -->
+        <div class="result-display z-20">
+            <span id="resultNumber">1</span>
+        </div>
+
+    </div>
+
+    <script>
+        const diceEl = document.getElementById('dice');
+        const rollButton = document.getElementById('rollButton');
+        const resultNumberEl = document.getElementById('resultNumber');
+        const diceSelectorEl = document.getElementById('diceSelector');
+        
+        let rollInterval = null;
+        let isRolling = false;
+        
+        const diceTypes = [4, 6, 8, 10, 12, 20];
+        let maxVal = 6; // Current maximum value (starts as d6)
+
+        const shapeClasses = {
+            4: 'd4-shape', 6: 'd6-shape', 8: 'd8-shape', 
+            10: 'd10-shape', 12: 'd12-shape', 20: 'd20-shape'
+        };
+
+        /**
+         * Renders the internal HTML for the dice container based on the current maxVal.
+         * For all dice types, the number is displayed inside the shape.
+         * @param {number} currentRoll The number to display on the die face.
+         */
+        function renderDiceContent(currentRoll) {
+            // 1. Clean up old shape classes
+            Object.values(shapeClasses).forEach(cls => diceEl.classList.remove(cls));
+            
+            // 2. Add the new shape class
+            diceEl.classList.add(shapeClasses[maxVal]);
+
+            // 3. Render the number inside the container
+            diceEl.innerHTML = `<span>${currentRoll}</span>`;
+        }
+
+        /**
+         * Changes the active dice type.
+         * @param {number} newMax The new maximum value.
+         */
+        function changeDiceType(newMax) {
+            if (isRolling) return;
+            
+            maxVal = newMax;
+            
+            // 1. Update button active states
+            document.querySelectorAll('.dice-selector-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const newButton = document.getElementById(`btn-d${newMax}`);
+            if(newButton) newButton.classList.add('active');
+
+            // 2. Render the initial dice visual (showing '1')
+            renderDiceContent(1);
+            resultNumberEl.textContent = '1';
+        }
+
+        /**
+         * Initializes the selector buttons and attaches event listeners.
+         */
+        function initializeSelector() {
+            diceTypes.forEach(val => {
+                const button = document.createElement('button');
+                button.textContent = `d${val}`;
+                button.id = `btn-d${val}`;
+                button.className = `dice-selector-button`;
+                
+                button.addEventListener('click', () => changeDiceType(val));
+                diceSelectorEl.appendChild(button);
+            });
+            // Set initial state to d6
+            changeDiceType(6); 
+        }
+
+        /**
+         * Simulates a dice roll with a visual animation.
+         */
+        function rollDice() {
+            if (isRolling) return;
+
+            isRolling = true;
+            rollButton.disabled = true;
+            rollButton.textContent = `... Rolling d${maxVal} ...`;
+            resultNumberEl.textContent = '?';
+            
+            // Add the dynamic roll animation class (applies to the visual shape)
+            diceEl.classList.add('rolling');
+
+            // 1. Rolling Animation Loop
+            const rollDuration = 1200; 
+            const intervalDuration = 80; 
+
+            let startTime = Date.now();
+
+            rollInterval = setInterval(() => {
+                if (Date.now() - startTime >= rollDuration) {
+                    clearInterval(rollInterval);
+                    finalizeRoll();
+                    return;
+                }
+                
+                // Random number for visual flicker during the roll
+                const randomRoll = Math.floor(Math.random() * maxVal) + 1;
+
+                // Update the visual dice content
+                renderDiceContent(randomRoll);
+
+            }, intervalDuration);
+        }
+
+        /**
+         * Finalizes the roll by stopping the animation and displaying the final result.
+         */
+        function finalizeRoll() {
+            // Remove the dynamic roll animation class
+            diceEl.classList.remove('rolling');
+
+            // 1. Determine Final Result
+            const finalResult = Math.floor(Math.random() * maxVal) + 1;
+
+            // 2. Display Final Dice Face and Result
+            renderDiceContent(finalResult);
+            resultNumberEl.textContent = finalResult;
+
+            // 3. Cleanup
+            isRolling = false;
+            rollButton.disabled = false;
+            rollButton.textContent = 'ROLL THE DICE';
+        }
+
+        // Initialize on load
+        window.onload = () => {
+            initializeSelector(); 
+            rollButton.addEventListener('click', rollDice);
+        };
+    </script>
+</body>
+</html>
