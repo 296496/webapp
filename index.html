@@ -1,339 +1,364 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Polyhedral Dice Roller</title>
-    
+    <title>Time Tracker</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Use Inter font for a professional look -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
-    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-purple': '#4F46E5', // Indigo-600 for primary
+                        'primary-green': '#6EE7B7', // Emerald-300 for logging
+                        'light-gray': '#E5E7EB',
+                        'dark-text': '#1F2937',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
     <style>
-        /* Define the clean, dark color palette and layout */
-        body {
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        /* Custom styles for the large display */
+        .stopwatch-display {
+            font-size: clamp(3rem, 10vw, 6rem);
+            font-weight: 700;
+            letter-spacing: -2px;
             font-family: 'Inter', sans-serif;
-            background-color: #1c1c2c; /* Deep Indigo Base Background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
-            overflow: hidden; 
-
-            /* Animated Lighting Background Styles (Two shifting radial gradients) */
-            background: radial-gradient(circle at top left, #301934 0%, transparent 50%),
-                        radial-gradient(circle at bottom right, #2c2140 0%, transparent 50%),
-                        #1c1c2c; 
-            background-size: 200% 200%; 
-            animation: background-pulse 15s ease-in-out infinite alternate;
-        }
-
-        @keyframes background-pulse {
-            /* Gently shift the background gradients to create a pulsating light effect */
-            0% {
-                background-position: 0% 0%, 100% 100%, 0% 0%;
-            }
-            100% {
-                background-position: 100% 100%, 0% 0%, 0% 0%;
-            }
-        }
-
-        /* --- DICE SHAPE STYLES --- */
-        .dice-container {
-            /* Base dimensions and centering */
-            width: 150px;
-            height: 150px;
-            margin-bottom: 40px;
-            transition: all 0.2s ease-in-out;
-            cursor: default;
-
-            /* Base style for all dice visuals */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 3rem;
-            font-weight: 700;
             line-height: 1;
-            text-align: center;
-            color: #333333; /* Dice number color */
-
-            /* Shared appearance (white, slightly embossed) */
-            background-color: #f0f0f5; 
-            border: 1px solid #c0c0c0;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4), inset 0 0 10px rgba(255, 255, 255, 0.6);
-        }
-
-        /* Dice specific styles and clip-paths for polyhedral shapes */
-        .dice-container.d4-shape { /* Triangle */
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-            border-radius: 0;
-            padding-top: 20px; 
-        }
-        .dice-container.d6-shape { /* Rounded Square */
-             border-radius: 18px; 
-             clip-path: none;
-        }
-        .dice-container.d8-shape { /* Octagon */
-            clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%);
-            border-radius: 0;
-        }
-        .dice-container.d10-shape { /* Hexagon approximation */
-            clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-            border-radius: 0;
-        }
-        .dice-container.d12-shape { /* Pentagon */
-            clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 20% 100%, 0% 35%);
-            border-radius: 0;
-        }
-        .dice-container.d20-shape { /* Circle for distinction */
-            border-radius: 50%;
-            clip-path: none;
-        }
-
-        /* --- UI STYLES --- */
-        .roll-button {
-            padding: 12px 30px;
-            font-weight: 600;
-            font-size: 1rem;
-            color: white;
-            border-radius: 8px;
-            cursor: pointer;
-            border: none;
-            background-color: #8b5cf6; /* Violet */
-            box-shadow: 0 4px #6d28d9; 
-            transition: all 0.15s ease-in-out;
-            letter-spacing: 0.05em;
-            width: 100%; 
-        }
-
-        .roll-button:hover { background-color: #7c3aed; }
-        .roll-button:active { box-shadow: 0 2px #6d28d9; transform: translateY(2px); }
-        .roll-button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: translateY(0); }
-
-        /* Final Result Display (Small readout below button) */
-        .result-display {
-            width: 150px;
-            height: 80px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 3rem;
-            font-weight: 700;
-            margin-top: 40px;
-            color: #8b5cf6; 
-            background-color: #2a2a3e; 
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
-        }
-
-        /* CSS Animation for a realistic roll effect (applied to the dice container) */
-        @keyframes roll-shake {
-            0% { transform: translate(0, 0) rotate(0deg) scale(1); }
-            25% { transform: translate(2px, -2px) rotate(15deg) scale(0.98); }
-            50% { transform: translate(-2px, 2px) rotate(-10deg) scale(1.02); }
-            75% { transform: translate(3px, 1px) rotate(5deg) scale(0.99); }
-            100% { transform: translate(0, 0) rotate(0deg) scale(1); }
-        }
-
-        .rolling {
-            animation: roll-shake 0.1s infinite alternate; 
-        }
-
-        /* Dice Selector Buttons */
-        .dice-selector-button {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            border-radius: 4px;
-            cursor: pointer;
-            background-color: #3b3b55; 
-            color: #b0b0cc;
-            border: 1px solid #4a4a6e;
-            transition: all 0.2s;
-        }
-
-        .dice-selector-button:hover {
-            background-color: #4a4a6e;
-            color: white;
-        }
-
-        .dice-selector-button.active {
-            background-color: #8b5cf6; 
-            color: white;
-            border-color: #8b5cf6;
-            font-weight: 600;
         }
     </style>
 </head>
-<body>
+<body class="bg-gray-100 min-h-screen py-12 px-4 font-sans text-dark-text">
 
-    <!-- Main Card Container -->
-    <div class="flex flex-col items-center p-10 bg-[#2a2a3e] shadow-2xl rounded-xl max-w-sm w-full border border-gray-700 z-10 relative">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-10">
+            <h1 class="text-3xl font-bold mb-1">Time Tracker</h1>
+            <p class="text-gray-500">Measure, Name, and Log Your Activities</p>
+        </header>
 
-        <!-- Title: POLYHEDRAL ROLLER -->
-        <h1 class="text-3xl font-light tracking-widest mb-6 text-gray-200">
-            POLYHEDRAL ROLLER
-        </h1>
+        <!-- Main Stopwatch Card -->
+        <div id="stopwatch-card" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl mb-10 border border-primary-purple/30">
+            <h2 class="text-xl font-semibold mb-6">Stopwatch</h2>
 
-        <!-- Dice Selector Buttons -->
-        <div id="diceSelector" class="flex flex-wrap justify-center gap-2 mb-8 max-w-full z-20">
-            <!-- Buttons dynamically added here by JavaScript -->
+            <!-- Time Display -->
+            <div class="bg-gray-50 p-6 rounded-lg mb-6 text-center shadow-inner">
+                <div id="time-display" class="stopwatch-display text-dark-text">00:00:00.000</div>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center justify-center space-x-4 mb-8">
+                <button id="start-stop-btn"
+                    class="px-6 py-3 rounded-xl font-medium text-white shadow-lg shadow-primary-purple/40 transition duration-150 ease-in-out bg-primary-purple hover:bg-indigo-700">
+                    Start
+                </button>
+                <button id="reset-btn"
+                    class="px-6 py-3 rounded-xl font-medium text-gray-700 bg-light-gray hover:bg-gray-300 transition duration-150 ease-in-out">
+                    Reset
+                </button>
+            </div>
+
+            <!-- Logging Section -->
+            <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-4 border-t border-gray-100">
+                <input type="text" id="activity-name-input" placeholder="fun"
+                    class="flex-grow w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-purple focus:border-primary-purple transition duration-150"
+                    value="Activity">
+                <button id="log-time-btn"
+                    class="w-full sm:w-auto px-6 py-3 rounded-xl font-medium text-dark-text bg-primary-green hover:bg-emerald-400 shadow-md shadow-primary-green/40 transition duration-150 ease-in-out disabled:opacity-50"
+                    disabled>
+                    Log Time & Reset
+                </button>
+            </div>
         </div>
 
-        <!-- Dice Container (Changes shape based on selection) -->
-        <div id="dice" class="dice-container z-20">
-            <!-- Rolled number displays here -->
+        <!-- Activity Log Card -->
+        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl">
+            <h2 class="text-xl font-semibold mb-6">Activity Log Sheet</h2>
+
+            <!-- User ID Display -->
+            <div class="text-sm text-gray-500 mb-4 flex justify-between items-center">
+                <span>Data stored privately for user:</span>
+                <span id="user-id-display" class="font-mono bg-gray-100 px-3 py-1 rounded text-xs text-primary-purple break-all">...loading user...</span>
+            </div>
+
+            <!-- Log Table -->
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr class="text-left bg-gray-50">
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">Activity Name</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Logged At</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-log-body" class="bg-white divide-y divide-gray-100">
+                        <!-- Log entries will be inserted here by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+            <!-- Empty state message -->
+            <div id="empty-log-message" class="text-center py-10 text-gray-400 italic">
+                No activities logged yet. Start tracking!
+            </div>
         </div>
-
-        <!-- Roll Button -->
-        <button id="rollButton" class="roll-button z-20">
-            ROLL THE DICE
-        </button>
-
-        <!-- Final Result Display -->
-        <div class="result-display z-20">
-            <span id="resultNumber">1</span>
-        </div>
-
     </div>
 
-    <script>
-        const diceEl = document.getElementById('dice');
-        const rollButton = document.getElementById('rollButton');
-        const resultNumberEl = document.getElementById('resultNumber');
-        const diceSelectorEl = document.getElementById('diceSelector');
-        
-        let rollInterval = null;
-        let isRolling = false;
-        
-        const diceTypes = [4, 6, 8, 10, 12, 20];
-        let maxVal = 6; // Current maximum value (starts as d6)
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const shapeClasses = {
-            4: 'd4-shape', 6: 'd6-shape', 8: 'd8-shape', 
-            10: 'd10-shape', 12: 'd12-shape', 20: 'd20-shape'
-        };
+        // Set log level for debugging
+        setLogLevel('Debug');
+
+        // --- GLOBAL FIREBASE/APP SETUP ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let db, auth;
+        let currentUserId = null;
+        let isAuthReady = false;
+
+        const timeDisplay = document.getElementById('time-display');
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const logTimeBtn = document.getElementById('log-time-btn');
+        const activityInput = document.getElementById('activity-name-input');
+        const logBody = document.getElementById('activity-log-body');
+        const emptyMessage = document.getElementById('empty-log-message');
+        const userIdDisplay = document.getElementById('user-id-display');
+
+        // --- STOPWATCH STATE ---
+        let startTime = 0;
+        let elapsedTime = 0;
+        let timerInterval = null;
+        let isRunning = false;
 
         /**
-         * Renders the internal HTML for the dice container based on the current maxVal.
-         * For all dice types, the number is displayed inside the shape.
-         * @param {number} currentRoll The number to display on the die face.
+         * Formats milliseconds into HH:MM:SS.mmm string.
+         * @param {number} ms - time in milliseconds.
+         * @returns {string} Formatted time string.
          */
-        function renderDiceContent(currentRoll) {
-            // 1. Clean up old shape classes
-            Object.values(shapeClasses).forEach(cls => diceEl.classList.remove(cls));
-            
-            // 2. Add the new shape class
-            diceEl.classList.add(shapeClasses[maxVal]);
-
-            // 3. Render the number inside the container
-            diceEl.innerHTML = `<span>${currentRoll}</span>`;
+        function formatTime(ms) {
+            const date = new Date(ms);
+            const hours = String(date.getUTCHours()).padStart(2, '0');
+            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
+            const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
+            return `${hours}:${minutes}:${seconds}.${milliseconds}`;
         }
 
         /**
-         * Changes the active dice type.
-         * @param {number} newMax The new maximum value.
+         * Updates the stopwatch display.
          */
-        function changeDiceType(newMax) {
-            if (isRolling) return;
-            
-            maxVal = newMax;
-            
-            // 1. Update button active states
-            document.querySelectorAll('.dice-selector-button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const newButton = document.getElementById(`btn-d${newMax}`);
-            if(newButton) newButton.classList.add('active');
-
-            // 2. Render the initial dice visual (showing '1')
-            renderDiceContent(1);
-            resultNumberEl.textContent = '1';
+        function updateDisplay() {
+            const currentTime = isRunning ? Date.now() : 0;
+            const timeDiff = currentTime - startTime;
+            const currentElapsedTime = isRunning ? elapsedTime + timeDiff : elapsedTime;
+            timeDisplay.textContent = formatTime(currentElapsedTime);
+            // Enable/disable log button based on elapsed time
+            logTimeBtn.disabled = currentElapsedTime < 1000 || !isAuthReady; // Require at least 1 second logged
         }
 
         /**
-         * Initializes the selector buttons and attaches event listeners.
+         * Starts or stops the stopwatch.
          */
-        function initializeSelector() {
-            diceTypes.forEach(val => {
-                const button = document.createElement('button');
-                button.textContent = `d${val}`;
-                button.id = `btn-d${val}`;
-                button.className = `dice-selector-button`;
-                
-                button.addEventListener('click', () => changeDiceType(val));
-                diceSelectorEl.appendChild(button);
-            });
-            // Set initial state to d6
-            changeDiceType(6); 
+        function startStop() {
+            if (isRunning) {
+                // STOP
+                clearInterval(timerInterval);
+                elapsedTime += Date.now() - startTime;
+                isRunning = false;
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.replace('bg-indigo-700', 'bg-primary-purple');
+                startStopBtn.classList.replace('shadow-red-500/40', 'shadow-primary-purple/40');
+            } else {
+                // START
+                startTime = Date.now();
+                timerInterval = setInterval(updateDisplay, 10);
+                isRunning = true;
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.replace('bg-primary-purple', 'bg-indigo-700');
+                startStopBtn.classList.replace('shadow-primary-purple/40', 'shadow-red-500/40');
+            }
+            updateDisplay();
         }
 
         /**
-         * Simulates a dice roll with a visual animation.
+         * Resets the stopwatch completely.
          */
-        function rollDice() {
-            if (isRolling) return;
+        function reset() {
+            if (isRunning) {
+                startStop(); // Stop first
+            }
+            startTime = 0;
+            elapsedTime = 0;
+            updateDisplay();
+        }
 
-            isRolling = true;
-            rollButton.disabled = true;
-            rollButton.textContent = `... Rolling d${maxVal} ...`;
-            resultNumberEl.textContent = '?';
+        /**
+         * Logs the current time and resets the stopwatch.
+         */
+        async function logTimeAndReset() {
+            if (!isAuthReady || !currentUserId) {
+                console.error("Cannot log: User not authenticated.");
+                // Show a user-friendly message instead of alert
+                timeDisplay.textContent = "Error: Authentication required to log.";
+                return;
+            }
+
+            const activityName = activityInput.value.trim() || 'Unnamed Activity';
+            if (isRunning) {
+                startStop(); // Stop the timer before logging
+            }
             
-            // Add the dynamic roll animation class (applies to the visual shape)
-            diceEl.classList.add('rolling');
+            const finalElapsedTime = elapsedTime;
 
-            // 1. Rolling Animation Loop
-            const rollDuration = 1200; 
-            const intervalDuration = 80; 
+            if (finalElapsedTime === 0) {
+                // Use custom message instead of alert
+                console.log("Cannot log: Timer is at 0.");
+                return;
+            }
 
-            let startTime = Date.now();
+            const durationFormatted = formatTime(finalElapsedTime);
 
-            rollInterval = setInterval(() => {
-                if (Date.now() - startTime >= rollDuration) {
-                    clearInterval(rollInterval);
-                    finalizeRoll();
-                    return;
+            const newActivity = {
+                name: activityName,
+                durationMs: finalElapsedTime,
+                duration: durationFormatted,
+                loggedAt: serverTimestamp(),
+                userId: currentUserId,
+            };
+
+            // Save to Firestore
+            try {
+                const collectionPath = `artifacts/${appId}/users/${currentUserId}/activities`;
+                await addDoc(collection(db, collectionPath), newActivity);
+                console.log("Activity successfully logged to Firestore.");
+                activityInput.value = 'Activity'; // Reset input
+                reset(); // Reset stopwatch state
+            } catch (e) {
+                console.error("Error adding document: ", e);
+                timeDisplay.textContent = "Error logging activity. Check console.";
+            }
+        }
+
+        /**
+         * Renders the activity log from the Firestore data.
+         * @param {Array<Object>} activities - Array of activity objects.
+         */
+        function renderActivities(activities) {
+            logBody.innerHTML = '';
+            if (activities.length === 0) {
+                emptyMessage.classList.remove('hidden');
+                return;
+            }
+            emptyMessage.classList.add('hidden');
+
+            // Sort activities by loggedAt descending (newest first)
+            activities.sort((a, b) => (b.loggedAt?.toMillis() || 0) - (a.loggedAt?.toMillis() || 0));
+
+            activities.forEach(activity => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+
+                // Format timestamp
+                let loggedTime = 'Logging...';
+                if (activity.loggedAt && typeof activity.loggedAt.toDate === 'function') {
+                    loggedTime = activity.loggedAt.toDate().toLocaleTimeString('en-US', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    });
+                } else if (activity.loggedAt) {
+                    // Fallback for non-Timestamp objects (shouldn't happen with serverTimestamp)
+                    loggedTime = new Date(activity.loggedAt).toLocaleTimeString('en-US', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    });
                 }
-                
-                // Random number for visual flicker during the roll
-                const randomRoll = Math.floor(Math.random() * maxVal) + 1;
 
-                // Update the visual dice content
-                renderDiceContent(randomRoll);
 
-            }, intervalDuration);
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-text">${activity.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">${activity.duration}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${loggedTime}</td>
+                `;
+                logBody.appendChild(tr);
+            });
         }
+
 
         /**
-         * Finalizes the roll by stopping the animation and displaying the final result.
+         * Sets up the real-time listener for the user's activities.
          */
-        function finalizeRoll() {
-            // Remove the dynamic roll animation class
-            diceEl.classList.remove('rolling');
+        function setupRealtimeListener(db, userId, appId) {
+            if (!userId) return;
 
-            // 1. Determine Final Result
-            const finalResult = Math.floor(Math.random() * maxVal) + 1;
+            const collectionPath = `artifacts/${appId}/users/${userId}/activities`;
+            const activitiesRef = collection(db, collectionPath);
+            const q = query(activitiesRef);
 
-            // 2. Display Final Dice Face and Result
-            renderDiceContent(finalResult);
-            resultNumberEl.textContent = finalResult;
-
-            // 3. Cleanup
-            isRolling = false;
-            rollButton.disabled = false;
-            rollButton.textContent = 'ROLL THE DICE';
+            onSnapshot(q, (snapshot) => {
+                const activities = [];
+                snapshot.forEach((doc) => {
+                    activities.push({ id: doc.id, ...doc.data() });
+                });
+                renderActivities(activities);
+            }, (error) => {
+                console.error("Error listening to activities:", error);
+            });
         }
 
-        // Initialize on load
-        window.onload = () => {
-            initializeSelector(); 
-            rollButton.addEventListener('click', rollDice);
+
+        // --- EVENT LISTENERS ---
+        startStopBtn.addEventListener('click', startStop);
+        resetBtn.addEventListener('click', reset);
+        logTimeBtn.addEventListener('click', logTimeAndReset);
+
+        // --- INITIALIZATION ---
+        window.onload = function() {
+            try {
+                // 1. Initialize Firebase
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // 2. Auth State Listener
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        currentUserId = user.uid;
+                        userIdDisplay.textContent = currentUserId;
+                        isAuthReady = true;
+                        // Start listening for data now that we have a user ID
+                        setupRealtimeListener(db, currentUserId, appId);
+                        console.log("Firebase initialized and user ready:", currentUserId);
+                    } else {
+                        // Attempt to sign in if not already signed in
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken).catch(e => {
+                                console.error("Custom token sign-in failed, falling back to anonymous:", e);
+                                signInAnonymously(auth);
+                            });
+                        } else {
+                            // If no token, sign in anonymously
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+
+                // Call updateDisplay once to ensure the initial button states are correct
+                updateDisplay();
+
+            } catch (error) {
+                console.error("Firebase Initialization Error:", error);
+                userIdDisplay.textContent = "Error: Check console";
+            }
         };
-    </script>
-</body>
-</html>
