@@ -3,362 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Time Tracker</title>
+    <title>Professional Dice Roller</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
+    <!-- Load Google Font for the title (Luckiest Guy) -->
+    <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Custom Tailwind Configuration */
         tailwind.config = {
             theme: {
                 extend: {
-                    colors: {
-                        'primary-purple': '#4F46E5', // Indigo-600 for primary
-                        'primary-green': '#6EE7B7', // Emerald-300 for logging
-                        'light-gray': '#E5E7EB',
-                        'dark-text': '#1F2937',
-                    },
                     fontFamily: {
+                        title: ['"Luckiest Guy"', 'cursive'],
                         sans: ['Inter', 'sans-serif'],
                     },
                 }
             }
         }
-    </script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        /* Custom styles for the large display */
-        .stopwatch-display {
-            font-size: clamp(3rem, 10vw, 6rem);
-            font-weight: 700;
-            letter-spacing: -2px;
-            font-family: 'Inter', sans-serif;
-            line-height: 1;
+        
+        /* Custom Styles for Button and Dice */
+
+        /* Custom Button Style matching the image's blue gradient/shadow (slightly refined for professionalism) */
+        #roll-button {
+            box-shadow: 0 4px 0 0 #0d6db3, 0 6px 12px rgba(0, 0, 0, 0.2); /* Deeper shadow */
+            background-image: linear-gradient(to top, #1a9cff 0%, #007bff 100%);
+            transition: all 0.1s ease-in-out;
         }
+
+        #roll-button:active {
+            transform: translateY(4px);
+            box-shadow: 0 0px 0 0 #0d6db3;
+        }
+
+        /* Dice Face Styling - Base position for dots */
+        .dice-dot {
+            fill: #333; /* Dark dot color */
+            transition: opacity 0.1s;
+        }
+
+        /* Animation for the "rolling" effect (applied to dice-container) */
+        @keyframes diceShake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .rolling {
+            animation: diceShake 0.1s infinite;
+        }
+
+        /* Style for the numerical display frame */
+        #result-display-frame {
+            border: 4px solid #333;
+            border-radius: 12px;
+            position: relative;
+            background-color: white;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Positioning the red corner markers */
+        .red-corner-tl { top: -8px; left: -8px; }
+        .red-corner-br { bottom: -8px; right: -8px; }
+
+        /* The specific red squares shown in the image */
+        .red-corner-tl::before { content: ''; position: absolute; width: 16px; height: 16px; background-color: #ff0000; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+        .red-corner-br::before { content: ''; position: absolute; width: 16px; height: 16px; background-color: #ff0000; clip-path: polygon(100% 0, 0 0, 100% 100%); }
+
     </style>
 </head>
-<body class="bg-gray-100 min-h-screen py-12 px-4 font-sans text-dark-text">
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-6 font-sans">
 
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <header class="text-center mb-10">
-            <h1 class="text-3xl font-bold mb-1">Time Tracker</h1>
-            <p class="text-gray-500">Measure, Name, and Log Your Activities</p>
-        </header>
+    <!-- Main Container -->
+    <div class="w-full max-w-sm flex flex-col items-center pt-8">
+        
+        <!-- Title -->
+        <h1 class="text-4xl sm:text-5xl font-title text-gray-800 tracking-wider mb-8">DICE ROLLER</h1>
 
-        <!-- Main Stopwatch Card -->
-        <div id="stopwatch-card" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl mb-10 border border-primary-purple/30">
-            <h2 class="text-xl font-semibold mb-6">Stopwatch</h2>
-
-            <!-- Time Display -->
-            <div class="bg-gray-50 p-6 rounded-lg mb-6 text-center shadow-inner">
-                <div id="time-display" class="stopwatch-display text-dark-text">00:00:00.000</div>
-            </div>
-
-            <!-- Controls -->
-            <div class="flex items-center justify-center space-x-4 mb-8">
-                <button id="start-stop-btn"
-                    class="px-6 py-3 rounded-xl font-medium text-white shadow-lg shadow-primary-purple/40 transition duration-150 ease-in-out bg-primary-purple hover:bg-indigo-700">
-                    Start
-                </button>
-                <button id="reset-btn"
-                    class="px-6 py-3 rounded-xl font-medium text-gray-700 bg-light-gray hover:bg-gray-300 transition duration-150 ease-in-out">
-                    Reset
-                </button>
-            </div>
-
-            <!-- Logging Section -->
-            <div class="flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4 pt-4 border-t border-gray-100">
-                <input type="text" id="activity-name-input" placeholder="fun"
-                    class="flex-grow w-full sm:w-auto px-4 py-3 border border-gray-300 rounded-xl focus:ring-primary-purple focus:border-primary-purple transition duration-150"
-                    value="Activity">
-                <button id="log-time-btn"
-                    class="w-full sm:w-auto px-6 py-3 rounded-xl font-medium text-dark-text bg-primary-green hover:bg-emerald-400 shadow-md shadow-primary-green/40 transition duration-150 ease-in-out disabled:opacity-50"
-                    disabled>
-                    Log Time & Reset
-                </button>
-            </div>
+        <!-- Dice Selection -->
+        <div class="flex space-x-3 mb-10 w-full justify-center">
+            <button 
+                id="die-button-6" 
+                class="die-select-button px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-colors"
+                onclick="selectDie(6)"
+            >
+                D6
+            </button>
+            <button 
+                id="die-button-10" 
+                class="die-select-button px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-colors bg-gray-200 text-gray-800"
+                onclick="selectDie(10)"
+            >
+                D10
+            </button>
+            <button 
+                id="die-button-20" 
+                class="die-select-button px-4 py-2 rounded-lg font-bold text-sm shadow-md transition-colors bg-gray-200 text-gray-800"
+                onclick="selectDie(20)"
+            >
+                D20
+            </button>
         </div>
 
-        <!-- Activity Log Card -->
-        <div class="bg-white p-6 md:p-8 rounded-xl shadow-2xl">
-            <h2 class="text-xl font-semibold mb-6">Activity Log Sheet</h2>
+        <!-- Dice Visualization (SVG) - Always renders a D6 for the visual component -->
+        <div id="dice-container" class="relative w-40 h-40 sm:w-48 sm:h-48 mb-12 transform transition-transform duration-300 ease-in-out">
+            <svg id="dice-svg" viewBox="0 0 100 100" class="w-full h-full shadow-lg rounded-2xl" 
+                 style="background-color: #f7f7f7; border: 4px solid #b0b0b0; box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);">
+                <defs>
+                    <!-- Dot template for easy reuse -->
+                    <circle id="dot" r="6" class="dice-dot"/>
+                </defs>
 
-            <!-- User ID Display -->
-            <div class="text-sm text-gray-500 mb-4 flex justify-between items-center">
-                <span>Data stored privately for user:</span>
-                <span id="user-id-display" class="font-mono bg-gray-100 px-3 py-1 rounded text-xs text-primary-purple break-all">...loading user...</span>
-            </div>
+                <!-- Die dots (positions based on a 100x100 grid) -->
+                <use href="#dot" x="50" y="50" id="dot-c"/>
+                <use href="#dot" x="25" y="25" id="dot-tl"/>
+                <use href="#dot" x="75" y="75" id="dot-br"/>
+                <use href="#dot" x="75" y="25" id="dot-tr"/>
+                <use href="#dot" x="25" y="75" id="dot-bl"/>
+                <use href="#dot" x="25" y="50" id="dot-cl"/>
+                <use href="#dot" x="75" y="50" id="dot-cr"/>
+            </svg>
+        </div>
 
-            <!-- Log Table -->
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead>
-                        <tr class="text-left bg-gray-50">
-                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tl-lg">Activity Name</th>
-                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                            <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">Logged At</th>
-                        </tr>
-                    </thead>
-                    <tbody id="activity-log-body" class="bg-white divide-y divide-gray-100">
-                        <!-- Log entries will be inserted here by JavaScript -->
-                    </tbody>
-                </table>
-            </div>
-            <!-- Empty state message -->
-            <div id="empty-log-message" class="text-center py-10 text-gray-400 italic">
-                No activities logged yet. Start tracking!
-            </div>
+        <!-- Roll Button -->
+        <button 
+            id="roll-button" 
+            class="text-xl sm:text-2xl font-bold text-white rounded-full px-12 py-3 mb-20 uppercase tracking-widest"
+            onclick="startRoll()"
+        >
+            ROLL
+        </button>
+
+        <!-- Numerical Result Display (matching the bottom image element) -->
+        <div id="result-display-frame" class="w-40 h-40 sm:w-48 sm:h-48 flex items-center justify-center relative">
+            
+            <!-- Red corner markers -->
+            <div class="absolute red-corner-tl w-4 h-4 rounded-sm"></div>
+            <div class="absolute red-corner-br w-4 h-4 rounded-sm"></div>
+
+            <!-- Numerical Result -->
+            <p id="roll-result-text" class="text-7xl sm:text-8xl font-black text-gray-900 select-none">1</p>
         </div>
     </div>
 
-    <!-- Firebase Scripts -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, addDoc, onSnapshot, collection, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { setLogLevel } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+    <!-- Message Box for custom alerts -->
+    <div id="message-box" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-lg shadow-2xl max-w-sm mx-4 text-center">
+            <p id="message-content" class="text-lg font-semibold mb-4">Message</p>
+            <button onclick="hideMessage()" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">OK</button>
+        </div>
+    </div>
 
-        // Set log level for debugging
-        setLogLevel('Debug');
+    <script>
+        const diceSvg = document.getElementById('dice-svg');
+        const rollButton = document.getElementById('roll-button');
+        const resultText = document.getElementById('roll-result-text');
+        
+        let currentMaxRoll = 6; // State: Max value of the current die selection
 
-        // --- GLOBAL FIREBASE/APP SETUP ---
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        // Define the dots for easy manipulation
+        const dots = {
+            'c': document.getElementById('dot-c'), 'tl': document.getElementById('dot-tl'),
+            'tr': document.getElementById('dot-tr'), 'bl': document.getElementById('dot-bl'),
+            'br': document.getElementById('dot-br'), 'cl': document.getElementById('dot-cl'),
+            'cr': document.getElementById('dot-cr'),
+        };
 
-        let db, auth;
-        let currentUserId = null;
-        let isAuthReady = false;
-
-        const timeDisplay = document.getElementById('time-display');
-        const startStopBtn = document.getElementById('start-stop-btn');
-        const resetBtn = document.getElementById('reset-btn');
-        const logTimeBtn = document.getElementById('log-time-btn');
-        const activityInput = document.getElementById('activity-name-input');
-        const logBody = document.getElementById('activity-log-body');
-        const emptyMessage = document.getElementById('empty-log-message');
-        const userIdDisplay = document.getElementById('user-id-display');
-
-        // --- STOPWATCH STATE ---
-        let startTime = 0;
-        let elapsedTime = 0;
-        let timerInterval = null;
-        let isRunning = false;
-
-        /**
-         * Formats milliseconds into HH:MM:SS.mmm string.
-         * @param {number} ms - time in milliseconds.
-         * @returns {string} Formatted time string.
-         */
-        function formatTime(ms) {
-            const date = new Date(ms);
-            const hours = String(date.getUTCHours()).padStart(2, '0');
-            const minutes = String(date.getUTCMinutes()).padStart(2, '0');
-            const seconds = String(date.getUTCSeconds()).padStart(2, '0');
-            const milliseconds = String(date.getUTCMilliseconds()).padStart(3, '0');
-            return `${hours}:${minutes}:${seconds}.${milliseconds}`;
-        }
+        // Configuration for dot visibility for each dice face (1-6)
+        const faceConfigs = {
+            0: { c: 0, tl: 0, tr: 0, bl: 0, br: 0, cl: 0, cr: 0 }, // Used to hide dots for non-d6
+            1: { c: 1, tl: 0, tr: 0, bl: 0, br: 0, cl: 0, cr: 0 },
+            2: { c: 0, tl: 1, tr: 0, bl: 0, br: 1, cl: 0, cr: 0 },
+            3: { c: 1, tl: 1, tr: 0, bl: 0, br: 1, cl: 0, cr: 0 },
+            4: { c: 0, tl: 1, tr: 1, bl: 1, br: 1, cl: 0, cr: 0 },
+            5: { c: 1, tl: 1, tr: 1, bl: 1, br: 1, cl: 0, cr: 0 },
+            6: { c: 0, tl: 1, tr: 1, bl: 1, br: 1, cl: 1, cr: 1 },
+        };
 
         /**
-         * Updates the stopwatch display.
+         * Updates the visual appearance of the SVG die face.
+         * @param {number} face The number (0-6) to display. Use 0 to hide all dots.
          */
-        function updateDisplay() {
-            const currentTime = isRunning ? Date.now() : 0;
-            const timeDiff = currentTime - startTime;
-            const currentElapsedTime = isRunning ? elapsedTime + timeDiff : elapsedTime;
-            timeDisplay.textContent = formatTime(currentElapsedTime);
-            // Enable/disable log button based on elapsed time
-            logTimeBtn.disabled = currentElapsedTime < 1000 || !isAuthReady; // Require at least 1 second logged
-        }
-
-        /**
-         * Starts or stops the stopwatch.
-         */
-        function startStop() {
-            if (isRunning) {
-                // STOP
-                clearInterval(timerInterval);
-                elapsedTime += Date.now() - startTime;
-                isRunning = false;
-                startStopBtn.textContent = 'Start';
-                startStopBtn.classList.replace('bg-indigo-700', 'bg-primary-purple');
-                startStopBtn.classList.replace('shadow-red-500/40', 'shadow-primary-purple/40');
-            } else {
-                // START
-                startTime = Date.now();
-                timerInterval = setInterval(updateDisplay, 10);
-                isRunning = true;
-                startStopBtn.textContent = 'Stop';
-                startStopBtn.classList.replace('bg-primary-purple', 'bg-indigo-700');
-                startStopBtn.classList.replace('shadow-primary-purple/40', 'shadow-red-500/40');
-            }
-            updateDisplay();
-        }
-
-        /**
-         * Resets the stopwatch completely.
-         */
-        function reset() {
-            if (isRunning) {
-                startStop(); // Stop first
-            }
-            startTime = 0;
-            elapsedTime = 0;
-            updateDisplay();
-        }
-
-        /**
-         * Logs the current time and resets the stopwatch.
-         */
-        async function logTimeAndReset() {
-            if (!isAuthReady || !currentUserId) {
-                console.error("Cannot log: User not authenticated.");
-                // Show a user-friendly message instead of alert
-                timeDisplay.textContent = "Error: Authentication required to log.";
-                return;
-            }
-
-            const activityName = activityInput.value.trim() || 'Unnamed Activity';
-            if (isRunning) {
-                startStop(); // Stop the timer before logging
-            }
+        function setDiceFace(face) {
+            const config = faceConfigs[face] || faceConfigs[0];
             
-            const finalElapsedTime = elapsedTime;
-
-            if (finalElapsedTime === 0) {
-                // Use custom message instead of alert
-                console.log("Cannot log: Timer is at 0.");
-                return;
-            }
-
-            const durationFormatted = formatTime(finalElapsedTime);
-
-            const newActivity = {
-                name: activityName,
-                durationMs: finalElapsedTime,
-                duration: durationFormatted,
-                loggedAt: serverTimestamp(),
-                userId: currentUserId,
-            };
-
-            // Save to Firestore
-            try {
-                const collectionPath = `artifacts/${appId}/users/${currentUserId}/activities`;
-                await addDoc(collection(db, collectionPath), newActivity);
-                console.log("Activity successfully logged to Firestore.");
-                activityInput.value = 'Activity'; // Reset input
-                reset(); // Reset stopwatch state
-            } catch (e) {
-                console.error("Error adding document: ", e);
-                timeDisplay.textContent = "Error logging activity. Check console.";
+            for (const key in config) {
+                if (dots[key]) {
+                    dots[key].style.opacity = config[key];
+                }
             }
         }
+        
+        /**
+         * Selects the die type and updates the visual state.
+         * @param {number} max The maximum value of the die (6, 10, or 20).
+         */
+        function selectDie(max) {
+            currentMaxRoll = max;
+            
+            // Update button visual state (highlight the selected button)
+            document.querySelectorAll('.die-select-button').forEach(btn => {
+                btn.classList.remove('bg-blue-600', 'text-white', 'shadow-inner');
+                btn.classList.add('bg-gray-200', 'text-gray-800');
+            });
+            document.getElementById(`die-button-${max}`).classList.add('bg-blue-600', 'text-white', 'shadow-inner');
+            document.getElementById(`die-button-${max}`).classList.remove('bg-gray-200', 'text-gray-800');
+            
+            // Reset display on selection change
+            setDiceFace(1);
+            resultText.textContent = 1;
+            
+            // Update the roll button text dynamically
+            rollButton.textContent = `ROLL D${max}`;
+        }
+
+        // Custom modal functions (included for completeness, though not strictly used in startRoll)
+        function showMessage(msg) {
+            document.getElementById('message-content').textContent = msg;
+            document.getElementById('message-box').classList.remove('hidden');
+            document.getElementById('message-box').classList.add('flex');
+        }
+
+        function hideMessage() {
+            document.getElementById('message-box').classList.add('hidden');
+            document.getElementById('message-box').classList.remove('flex');
+        }
+
 
         /**
-         * Renders the activity log from the Firestore data.
-         * @param {Array<Object>} activities - Array of activity objects.
+         * Initiates the visual dice roll animation and calculates the result.
          */
-        function renderActivities(activities) {
-            logBody.innerHTML = '';
-            if (activities.length === 0) {
-                emptyMessage.classList.remove('hidden');
-                return;
-            }
-            emptyMessage.classList.add('hidden');
+        function startRoll() {
+            if (rollButton.disabled) return;
+            
+            // Disable button during roll
+            rollButton.disabled = true;
+            rollButton.classList.add('opacity-50', 'cursor-not-allowed');
+            
+            const isD6 = currentMaxRoll === 6;
+            
+            // Add the shaking animation class to the visual container
+            diceSvg.classList.add('rolling');
+            
+            let flashCount = 0;
+            const rollDuration = 1000;
+            const flashInterval = 80;
 
-            // Sort activities by loggedAt descending (newest first)
-            activities.sort((a, b) => (b.loggedAt?.toMillis() || 0) - (a.loggedAt?.toMillis() || 0));
+            const flashFaces = setInterval(() => {
+                
+                flashCount++;
 
-            activities.forEach(activity => {
-                const tr = document.createElement('tr');
-                tr.className = 'hover:bg-gray-50';
+                // 1. Flash the result number quickly
+                const tempResult = Math.floor(Math.random() * currentMaxRoll) + 1;
+                resultText.textContent = tempResult;
 
-                // Format timestamp
-                let loggedTime = 'Logging...';
-                if (activity.loggedAt && typeof activity.loggedAt.toDate === 'function') {
-                    loggedTime = activity.loggedAt.toDate().toLocaleTimeString('en-US', {
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                    });
-                } else if (activity.loggedAt) {
-                    // Fallback for non-Timestamp objects (shouldn't happen with serverTimestamp)
-                    loggedTime = new Date(activity.loggedAt).toLocaleTimeString('en-US', {
-                        hour: '2-digit', minute: '2-digit', second: '2-digit',
-                    });
+                // 2. Flash the d6 dots only if a d6 is selected
+                if (isD6) {
+                    const tempFace = Math.floor(Math.random() * 6) + 1;
+                    setDiceFace(tempFace);
+                }
+                
+                // Stop flashing before the end of the duration
+                if (flashCount * flashInterval > rollDuration - 100) {
+                    clearInterval(flashFaces);
+                }
+            }, flashInterval);
+
+            // Calculate final result and stop animation
+            setTimeout(() => {
+                clearInterval(flashFaces); // Ensure flashing stops
+
+                // 1. Calculate final random result
+                const finalResult = Math.floor(Math.random() * currentMaxRoll) + 1;
+
+                // 2. Set the final visual dice face:
+                if (isD6) {
+                    setDiceFace(finalResult); // Show final face for d6
+                } else {
+                    setDiceFace(0); // Hide dots for polyhedral dice
                 }
 
+                // 3. Remove the rolling animation
+                diceSvg.classList.remove('rolling');
+                
+                // 4. Update the numerical display (always)
+                resultText.textContent = finalResult;
 
-                tr.innerHTML = `
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-dark-text">${activity.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">${activity.duration}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-400">${loggedTime}</td>
-                `;
-                logBody.appendChild(tr);
-            });
+                // 5. Re-enable the button
+                rollButton.disabled = false;
+                rollButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                
+            }, rollDuration);
         }
 
-
-        /**
-         * Sets up the real-time listener for the user's activities.
-         */
-        function setupRealtimeListener(db, userId, appId) {
-            if (!userId) return;
-
-            const collectionPath = `artifacts/${appId}/users/${userId}/activities`;
-            const activitiesRef = collection(db, collectionPath);
-            const q = query(activitiesRef);
-
-            onSnapshot(q, (snapshot) => {
-                const activities = [];
-                snapshot.forEach((doc) => {
-                    activities.push({ id: doc.id, ...doc.data() });
-                });
-                renderActivities(activities);
-            }, (error) => {
-                console.error("Error listening to activities:", error);
-            });
-        }
-
-
-        // --- EVENT LISTENERS ---
-        startStopBtn.addEventListener('click', startStop);
-        resetBtn.addEventListener('click', reset);
-        logTimeBtn.addEventListener('click', logTimeAndReset);
-
-        // --- INITIALIZATION ---
-        window.onload = function() {
-            try {
-                // 1. Initialize Firebase
-                const app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                // 2. Auth State Listener
-                onAuthStateChanged(auth, async (user) => {
-                    if (user) {
-                        currentUserId = user.uid;
-                        userIdDisplay.textContent = currentUserId;
-                        isAuthReady = true;
-                        // Start listening for data now that we have a user ID
-                        setupRealtimeListener(db, currentUserId, appId);
-                        console.log("Firebase initialized and user ready:", currentUserId);
-                    } else {
-                        // Attempt to sign in if not already signed in
-                        if (initialAuthToken) {
-                            await signInWithCustomToken(auth, initialAuthToken).catch(e => {
-                                console.error("Custom token sign-in failed, falling back to anonymous:", e);
-                                signInAnonymously(auth);
-                            });
-                        } else {
-                            // If no token, sign in anonymously
-                            await signInAnonymously(auth);
-                        }
-                    }
-                });
-
-                // Call updateDisplay once to ensure the initial button states are correct
-                updateDisplay();
-
-            } catch (error) {
-                console.error("Firebase Initialization Error:", error);
-                userIdDisplay.textContent = "Error: Check console";
-            }
+        // Initialize the die to D6 on page load
+        window.onload = () => {
+            selectDie(6); 
         };
+        
+    </script>
+</body>
+</html>
